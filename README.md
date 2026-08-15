@@ -94,6 +94,37 @@ Because a global, input-blocking `CGEventTap` is not permitted inside the App
 Sandbox, this app is distributed unsandboxed (direct build/run, not Mac App
 Store).
 
+## Can this lock you out of the Mac permanently?
+
+Short answer: **no.** Longer answer:
+
+- There is no backdoor, master password, or "forgot password" flow: while
+  locked, the *only* software path back to normal input is typing the
+  correct password (hold ⌘ for 3s, then type it). If the password is
+  forgotten, the app itself offers no recovery.
+- However, the physical **power key is always left untouched** (see below),
+  by construction rather than by trying to detect it specifically: the tap
+  only ever blocks a fixed allow-list of ordinary media keys, and passes
+  through anything not on that list, power key included, no matter its
+  real hardware code. A long-press hard shutdown (and the short-press
+  sleep/restart/shutdown/Lock Screen dialog) therefore always works,
+  independent of lock state, and a forced shutdown at the SMC/firmware
+  level cannot be intercepted by any user-space process regardless of
+  permissions.
+- Lock state lives only in memory (`LockController.isLocked`) and is never
+  written to disk. The app also isn't registered as a login item or launch
+  agent anywhere in this repo. So after a forced restart, KeyLocker does
+  not relaunch, let alone come back up already locked -- you land on a
+  normal, unlocked Mac.
+- If the KeyLocker process dies for any reason (crash, force-quit via a
+  privileged tool) the `CGEventTap` dies with it, which fails **open**:
+  input is unblocked immediately, not stuck blocked.
+
+Net effect: the worst case is losing whatever unsaved state was on screen
+because you had to force a restart, not a bricked machine. The one thing
+this app is not designed to survive is *itself* being asked to bypass the
+power key, which is exactly the one thing it refuses to do.
+
 ## Known limitations
 
 - Volume, brightness, media playback, and the F1-F12 row (in its default

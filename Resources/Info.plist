@@ -7,7 +7,7 @@
     <key>CFBundleDisplayName</key>
     <string>KeyLocker</string>
     <key>CFBundleIdentifier</key>
-    <string>com.juliogomez.keylocker</string>
+    <string>com.jugomo.keylocker</string>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
     <key>CFBundleShortVersionString</key>

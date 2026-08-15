@@ -10,7 +10,7 @@ import CryptoKit
 /// with the stored salt and compares digests.
 enum PasswordStore {
 
-    private static let service = "com.juliogomez.keylocker"
+    private static let service = "com.jugomo.keylocker"
     private static let account = "unlock-password"
     private static let saltLength = 16
 
