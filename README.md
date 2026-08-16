@@ -1,7 +1,7 @@
 # Key Locker macOS
 
 A macOS menu bar utility that blocks keyboard, mouse, and trackpad input
-until a password is typed, without ever covering or dimming the screen.
+until a password is typed.
 Whatever is on screen (including a full-screen video) keeps playing exactly
 as before, only input is blocked. To unlock, hold the Cmd key for 3
 seconds to bring up the password prompt, then type the password and press
