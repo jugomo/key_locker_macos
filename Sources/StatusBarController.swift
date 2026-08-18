@@ -37,6 +37,7 @@ final class StatusBarController {
             keyEquivalent: ""
         )
         activateItem.target = self
+        activateItem.image = menuIcon(systemSymbolName: "lock.fill", accessibilityDescription: "Activate Lock")
         menu.addItem(activateItem)
 
         let setPasswordItem = NSMenuItem(
@@ -45,6 +46,7 @@ final class StatusBarController {
             keyEquivalent: ""
         )
         setPasswordItem.target = self
+        setPasswordItem.image = menuIcon(systemSymbolName: "key.fill", accessibilityDescription: "Set Unlock Password")
         menu.addItem(setPasswordItem)
 
         menu.addItem(.separator())
@@ -55,19 +57,31 @@ final class StatusBarController {
             keyEquivalent: ""
         )
         aboutItem.target = self
+        aboutItem.image = menuIcon(systemSymbolName: "info.circle", accessibilityDescription: "About KeyLocker")
         menu.addItem(aboutItem)
 
         menu.addItem(.separator())
 
         let quitItem = NSMenuItem(
-            title: "Quit KeyLocker",
+            title: "Quit",
             action: #selector(quitTapped),
             keyEquivalent: "q"
         )
         quitItem.target = self
+        quitItem.image = menuIcon(systemSymbolName: "power", accessibilityDescription: "Quit")
         menu.addItem(quitItem)
 
         return menu
+    }
+
+    /// Builds a consistently-sized, template-rendered SF Symbol for use as a
+    /// menu item's icon (so it tints correctly in both light and dark mode).
+    private func menuIcon(systemSymbolName: String, accessibilityDescription: String) -> NSImage? {
+        let config = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
+        let image = NSImage(systemSymbolName: systemSymbolName, accessibilityDescription: accessibilityDescription)?
+            .withSymbolConfiguration(config)
+        image?.isTemplate = true
+        return image
     }
 
     @objc private func activateLockTapped() {
