@@ -1,12 +1,12 @@
 import AppKit
 
 /// Manages the menu bar (status) item: icon, and the right-click menu with
-/// "Activate Lock", "Set Unlock Password...", and "Quit".
+/// "Activate Lock", "Settings...", and "Quit".
 final class StatusBarController {
 
     private let statusItem: NSStatusItem
     private let lockController: LockController
-    private let setPasswordWindow = SetPasswordWindow()
+    private let settingsWindow = SettingsWindow()
 
     private let lockedImage = NSImage(systemSymbolName: "lock.fill", accessibilityDescription: "Locked")
     private let unlockedImage = NSImage(systemSymbolName: "lock.open", accessibilityDescription: "Unlocked")
@@ -40,14 +40,14 @@ final class StatusBarController {
         activateItem.image = menuIcon(systemSymbolName: "lock.fill", accessibilityDescription: "Activate Lock")
         menu.addItem(activateItem)
 
-        let setPasswordItem = NSMenuItem(
-            title: "Set Unlock Password\u{2026}",
-            action: #selector(setPasswordTapped),
+        let settingsItem = NSMenuItem(
+            title: "Settings\u{2026}",
+            action: #selector(settingsTapped),
             keyEquivalent: ""
         )
-        setPasswordItem.target = self
-        setPasswordItem.image = menuIcon(systemSymbolName: "key.fill", accessibilityDescription: "Set Unlock Password")
-        menu.addItem(setPasswordItem)
+        settingsItem.target = self
+        settingsItem.image = menuIcon(systemSymbolName: "gearshape", accessibilityDescription: "Settings")
+        menu.addItem(settingsItem)
 
         menu.addItem(.separator())
 
@@ -91,7 +91,7 @@ final class StatusBarController {
         case .failure(.noPasswordSet):
             showAlert(
                 title: "No Unlock Password Set",
-                message: "Set an unlock password first (\"Set Unlock Password\u{2026}\") before activating the lock.",
+                message: "Set an unlock password first (\"Settings\u{2026}\") before activating the lock.",
                 style: .warning
             )
         case .failure(.permissionDenied):
@@ -99,8 +99,8 @@ final class StatusBarController {
         }
     }
 
-    @objc private func setPasswordTapped() {
-        setPasswordWindow.show()
+    @objc private func settingsTapped() {
+        settingsWindow.show()
     }
 
     @objc private func aboutTapped() {

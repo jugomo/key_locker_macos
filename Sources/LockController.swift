@@ -36,6 +36,10 @@ final class LockController {
 
     private static let lockedMessage = "Input is locked. Hold \u{2318} for 3s to unlock."
     private static let holdingMessage = "Keep holding \u{2318} to unlock\u{2026}"
+    private static let matrixOffMessage = "Matrix effect: Off"
+    private static let matrixBlackMessage = "Matrix effect: Black background"
+    private static let matrixBlurMessage = "Matrix effect: Blurred (more transparent)"
+    private static let matrixBlurSolidMessage = "Matrix effect: Blurred (less transparent)"
 
     // NX_SYSDEFINED: hardware "special key" events -- volume, brightness,
     // mute, media playback, keyboard illumination, and the F1-F12 row while
@@ -84,12 +88,22 @@ final class LockController {
     private var holdToUnlockTimer: Timer?
     private var holdToUnlockStart: Date?
 
+    // The Matrix rain backdrop cycles through these on each quick Cmd tap
+    // (see `cycleMatrixOverlay`): off, then each background mode in turn.
+    // `nil` means off. Seeded from `AppSettings.showMatrixWhenLocked` /
+    // `AppSettings.matrixBackgroundMode` each time the lock engages, so the
+    // cycle survives opening/cancelling the unlock prompt but resets to the
+    // configured default on the next lock.
+    private static let matrixCycleModes: [MatrixBackgroundMode?] = [nil, .black, .screenBlur, .screenBlurSolid]
+    private var matrixCycleIndex = 0
+
     private var powerAssertionID: IOPMAssertionID = 0
     private var powerAssertionActive = false
 
     private let toast = ToastWindow()
     private let prompt = PromptWindow()
     private let blurOverlay = BlurOverlay()
+    private let matrixOverlay = MatrixRainOverlay()
 
     /// Called whenever `isLocked` changes, so the status bar icon can update.
     var onLockStateChanged: ((Bool) -> Void)?
@@ -117,6 +131,10 @@ final class LockController {
         isPromptVisible = false
         onLockStateChanged?(true)
         toast.show(Self.lockedMessage)
+        matrixCycleIndex = AppSettings.showMatrixWhenLocked
+            ? (Self.matrixCycleModes.firstIndex(of: AppSettings.matrixBackgroundMode) ?? 0)
+            : 0
+        applyMatrixCycleState()
         return .success(())
     }
 
@@ -130,6 +148,7 @@ final class LockController {
         passwordBuffer = ""
         prompt.hide()
         blurOverlay.hide()
+        matrixOverlay.hide()
         toast.hide()
         onLockStateChanged?(false)
     }
@@ -291,10 +310,11 @@ final class LockController {
                     beginHoldToUnlock()
                 }
             } else if holdToUnlockTimer != nil {
-                // Released before the hold completed -- counts as a normal
-                // blocked key press.
+                // Released before the hold completed (i.e. a quick tap,
+                // under 3s) -- cycles the Matrix rain backdrop instead of
+                // counting as an ordinary blocked key press.
                 cancelHoldToUnlock()
-                toast.show(Self.lockedMessage)
+                cycleMatrixOverlay()
             }
             return
         }
@@ -329,11 +349,43 @@ final class LockController {
         showPrompt()
     }
 
+    /// Advances the Matrix rain backdrop to the next state -- off, black,
+    /// blurred (more transparent), blurred (less transparent), then back to
+    /// off -- in response to a quick (< 3s) Cmd tap. Purely a live,
+    /// in-session cycle -- it never touches `AppSettings`, so the configured
+    /// default still applies the next time the lock engages.
+    private func cycleMatrixOverlay() {
+        matrixCycleIndex = (matrixCycleIndex + 1) % Self.matrixCycleModes.count
+        applyMatrixCycleState()
+
+        let message: String
+        switch Self.matrixCycleModes[matrixCycleIndex] {
+        case .none: message = Self.matrixOffMessage
+        case .black: message = Self.matrixBlackMessage
+        case .screenBlur: message = Self.matrixBlurMessage
+        case .screenBlurSolid: message = Self.matrixBlurSolidMessage
+        }
+        toast.show(message)
+    }
+
+    /// Shows or hides the Matrix rain to match `matrixCycleIndex`.
+    private func applyMatrixCycleState() {
+        if let mode = Self.matrixCycleModes[matrixCycleIndex] {
+            matrixOverlay.show(mode: mode)
+        } else {
+            matrixOverlay.hide()
+        }
+    }
+
     // MARK: - Password prompt
 
     private func showPrompt() {
         isPromptVisible = true
         passwordBuffer = ""
+        // The Matrix rain (if showing) is purely an idle-locked backdrop --
+        // the unlock prompt itself always looks and behaves exactly as it
+        // did before that feature existed.
+        matrixOverlay.hide()
         blurOverlay.show()
         prompt.show()
     }
@@ -386,6 +438,7 @@ final class LockController {
         prompt.hide()
         blurOverlay.hide()
         toast.show(Self.lockedMessage)
+        applyMatrixCycleState()
     }
 }
 
