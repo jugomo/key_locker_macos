@@ -1,15 +1,18 @@
 import AppKit
 
 /// Manages the menu bar (status) item: icon, and the right-click menu with
-/// "Activate Lock", "Settings...", and "Quit".
+/// "Activate Lock", "View Code", "Settings...", and "Quit".
 final class StatusBarController {
 
     private let statusItem: NSStatusItem
     private let lockController: LockController
+    private let codeViewController = CodeViewController()
     private let settingsWindow = SettingsWindow()
 
     private let lockedImage = NSImage(systemSymbolName: "lock.fill", accessibilityDescription: "Locked")
     private let unlockedImage = NSImage(systemSymbolName: "lock.open", accessibilityDescription: "Unlocked")
+
+    private var viewCodeItem: NSMenuItem!
 
     init(lockController: LockController) {
         self.lockController = lockController
@@ -20,6 +23,9 @@ final class StatusBarController {
 
         lockController.onLockStateChanged = { [weak self] locked in
             self?.configureIcon(locked: locked)
+        }
+        codeViewController.onStateChanged = { [weak self] visible in
+            self?.viewCodeItem.title = visible ? "Stop Code View" : "View Code"
         }
     }
 
@@ -39,6 +45,19 @@ final class StatusBarController {
         activateItem.target = self
         activateItem.image = menuIcon(systemSymbolName: "lock.fill", accessibilityDescription: "Activate Lock")
         menu.addItem(activateItem)
+
+        let viewCodeItem = NSMenuItem(
+            title: "View Code",
+            action: #selector(viewCodeTapped),
+            keyEquivalent: ""
+        )
+        viewCodeItem.target = self
+        viewCodeItem.image = menuIcon(
+            systemSymbolName: "chevron.left.forwardslash.chevron.right",
+            accessibilityDescription: "View Code"
+        )
+        menu.addItem(viewCodeItem)
+        self.viewCodeItem = viewCodeItem
 
         let settingsItem = NSMenuItem(
             title: "Settings\u{2026}",
@@ -85,6 +104,9 @@ final class StatusBarController {
     }
 
     @objc private func activateLockTapped() {
+        // Avoid two Matrix rain overlays (and two Cmd-tap listeners) at
+        // once -- the real lock takes priority over the code-view preview.
+        codeViewController.stop()
         switch lockController.activateLock() {
         case .success:
             break
@@ -94,6 +116,18 @@ final class StatusBarController {
                 message: "Set an unlock password first (\"Settings\u{2026}\") before activating the lock.",
                 style: .warning
             )
+        case .failure(.permissionDenied):
+            showPermissionAlert()
+        }
+    }
+
+    @objc private func viewCodeTapped() {
+        // Should be unreachable in practice -- the lock swallows the click
+        // needed to reach this menu item at all -- but guard defensively.
+        guard !lockController.isLocked else { return }
+        switch codeViewController.toggle() {
+        case .success:
+            break
         case .failure(.permissionDenied):
             showPermissionAlert()
         }
