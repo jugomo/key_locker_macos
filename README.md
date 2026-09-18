@@ -40,6 +40,10 @@ only the source code. No support is provided, and use it under your own risk.
   it. Typed characters are decoded directly from the event tap
   (not via normal window focus) and shown as masked dots. Press Return to
   submit, or Esc to cancel back to the locked state.
+- A quick tap of Cmd (released before the 3s hold completes) doesn't unlock
+  anything -- instead it cycles the optional Matrix-rain backdrop (see
+  below) through off / black / blurred / blurred-solid, purely cosmetic and
+  independent of the unlock mechanic.
 - A correct password immediately restores normal input. An incorrect one
   shows an error and lets you retry.
 - An IOKit power assertion keeps the display from sleeping/dimming while
@@ -47,17 +51,43 @@ only the source code. No support is provided, and use it under your own risk.
 - The unlock password is never stored in plaintext: it's salted and hashed
   (SHA-256) into the Keychain.
 
+## Matrix rain effect
+
+An optional full-screen "Matrix code" rain animation can play in the
+background while the lock is engaged (until the unlock prompt is brought
+up, which always takes over). Configure it from **Settings…**:
+
+- **Show matrix code when locked** turns the effect on/off.
+- Background: solid black, or the real desktop showing through a blur mask
+  (same look as the unlock scrim) in either of two opacities.
+
+While locked, a quick Cmd tap (not held to the 3s unlock threshold) cycles
+through these backgrounds live, plus an "off" state, without needing to
+open Settings.
+
+The same animation is also available, independent of the lock, from the
+menu bar's **View Code** item: a harmless full-screen preview with no
+password involved. A passive (listen-only) event tap watches for Cmd (to
+cycle background styles) and Esc (to close); everything else passes
+through untouched to whatever app is in front, since -- unlike the real
+lock -- this never blocks input.
+
 ## Menu bar
 
-Click the lock icon for a menu with:
+The menu bar icon itself shows lock state (open/closed padlock). Click it
+for a menu with:
 
 - **Activate Lock** Engages the lock. If no password has been set yet,
   you'll get a warning instead and the lock will *not* activate.
-- **Set Unlock Password…** Set or change the password used to unlock.
+- **View Code** / **Stop Code View** Toggles the Matrix-rain preview (see
+  above) without locking anything; the title flips depending on whether
+  it's currently showing.
+- **Settings…** Set or change the unlock password, and configure the
+  Matrix rain effect.
 - **About KeyLocker…** The standard macOS About panel, with copyright
   credit.
-- **Quit KeyLocker** Quits the app (only reachable while unlocked, since
-  the lock blocks clicks on the menu bar too).
+- **Quit** Quits the app (only reachable while unlocked, since the lock
+  blocks clicks on the menu bar too).
 
 ## Building
 
